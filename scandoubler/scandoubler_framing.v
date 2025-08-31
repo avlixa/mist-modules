@@ -63,10 +63,10 @@ reg        line_toggle;
 reg  [HCNT_WIDTH-1:0] hcnt;
 reg  [HSCNT_WIDTH:0] hs_max;
 reg  [HSCNT_WIDTH:0] hs_rise;
-reg  [HCNT_WIDTH:0] hb_fall[2];
-reg  [HCNT_WIDTH:0] hb_rise[2];
-reg  [HCNT_WIDTH+1:0] vb_event[2];
-reg  [HCNT_WIDTH+1:0] vs_event[2];
+reg  [HCNT_WIDTH:0] hb_fall[2:0];
+reg  [HCNT_WIDTH:0] hb_rise[2:0];
+reg  [HCNT_WIDTH+1:0] vb_event[2:0];
+reg  [HCNT_WIDTH+1:0] vs_event[2:0];
 reg  [HSCNT_WIDTH:0] synccnt;
 
 // Input pixel clock, aligned with input sync:
@@ -77,7 +77,7 @@ reg [3:0] ce_divider_out;
 reg [3:0] i_div;
 wire ce_x1 = (i_div == ce_divider_in);
 
-always @(posedge clk_sys) begin
+always @(posedge clk_sys) begin :block_pixel_clk
 	reg hsD, vsD;
 	reg vbD;
 	reg hbD;
@@ -145,7 +145,7 @@ reg vs_sd = 0;
 // Output pixel clock, aligned with output sync:
 reg [3:0] sd_i_div;
 
-always @(posedge clk_sys) begin
+always @(posedge clk_sys) begin :block_logicx2
 	reg hsD;
 
 	// Output logic on x2 clkena

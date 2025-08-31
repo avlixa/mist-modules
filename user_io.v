@@ -251,7 +251,7 @@ always@(posedge spi_sck or posedge SPI_SS_IO) begin : spi_counter
 		byte_cnt <= 0;
 	end else begin
 		if((bit_cnt == 7)&&(~&byte_cnt)) 
-			byte_cnt <= byte_cnt + 1'd1;
+			byte_cnt <= byte_cnt + 8'd1;
 
 		bit_cnt <= bit_cnt + 1'd1;
 	end

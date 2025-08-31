@@ -32,16 +32,16 @@
 
 module spdif
 (
-    input           clk_i,
-    input           rst_i,
+    input  wire     clk_i,
+    input  wire     rst_i,
 
-    input [31:0]    clk_rate_i,
+    input  wire [31:0]    clk_rate_i,
 
     // Output
-    output          spdif_o,
+    output  wire    spdif_o,
 
     // Audio interface (16-bit x 2 = RL)
-    input [31:0]    sample_i,
+    input  wire [31:0]    sample_i,
     output reg      sample_req_o
 );
 

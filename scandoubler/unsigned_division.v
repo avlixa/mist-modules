@@ -1,13 +1,13 @@
 module unsigned_division #(
 	parameter widthlog2 = 8
 ) (
-	input clk,
-	input reset_n,
-	input [widthlog2-1:0] dividend,
-	input [widthlog2-1:0] divisor,
+	input wire clk,
+	input wire reset_n,
+	input wire [widthlog2-1:0] dividend,
+	input wire [widthlog2-1:0] divisor,
 	output reg [widthlog2-1:0] quotient,
 	output reg [widthlog2-1:0] remainder,
-	input req,
+	input wire req,
 	output reg ack
 );
 
@@ -26,7 +26,7 @@ reg [1:0] state=IDLE;
 always @(posedge clk) begin
 	ack <= 1'b0;
 
-	if(!reset_n) begin
+	if( !reset_n ) begin
 		state <= IDLE;
 	end else begin
 

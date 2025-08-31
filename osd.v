@@ -50,7 +50,12 @@ localparam OSD_WIDTH_PADDED = OSD_WIDTH + (OSD_WIDTH >> 1);  // 25% padding left
 // this core supports only the display related OSD commands
 // of the minimig
 reg        osd_enable;
-(* ramstyle = "no_rw_check" *) reg  [7:0] osd_buffer[256*OSD_LINES-1:0];  // the OSD buffer itself
+//(* ramstyle = "no_rw_check" *) reg  [7:0] osd_buffer[256*OSD_LINES-1:0];  // the OSD buffer itself
+reg  [7:0] osd_buffer[256*OSD_LINES-1:0];  // the OSD buffer itself
+reg osd_buffer_we;
+reg [7:0] osd_buffer_d;
+reg [11:0]  osd_buffer_a;
+
 
 // the OSD has its own SPI interface to the io controller
 always@(posedge SPI_SCK, posedge SPI_SS3) begin
@@ -62,6 +67,7 @@ always@(posedge SPI_SCK, posedge SPI_SS3) begin
 	if(SPI_SS3) begin
 		cnt  <= 0;
 		bcnt <= 0;
+		osd_buffer_we <= 0;
 	end else begin
 		sbuf <= {sbuf[6:0], SPI_DI};
 
@@ -81,10 +87,19 @@ always@(posedge SPI_SCK, posedge SPI_SS3) begin
 
 		// command 0x20: OSDCMDWRITE
 		if((cmd[7:4] == 4'b0010) && (cnt == 15)) begin
-			osd_buffer[bcnt] <= {sbuf[6:0], SPI_DI};
+			//osd_buffer[bcnt] <= {sbuf[6:0], SPI_DI};
+			osd_buffer_we <= 1;
+			osd_buffer_d  <= {sbuf[6:0], SPI_DI};
+			osd_buffer_a  <= bcnt;
 			bcnt <= bcnt + 1'd1;
 		end
 	end
+end
+
+always @(posedge SPI_SCK) begin
+        if (osd_buffer_we) begin
+            osd_buffer[osd_buffer_a] <= osd_buffer_d;
+        end
 end
 
 // *********************************************************************************
@@ -213,29 +228,46 @@ wire [10:0] osd_vcnt    = v_cnt - v_osd_start;
 wire [10:0] osd_hcnt_next  = osd_hcnt + 2'd1;  // one pixel offset for osd byte address register
 reg         osd_de;
 
-reg [11:0] osd_buffer_addr;
-wire [7:0] osd_byte = osd_buffer[osd_buffer_addr];
+//reg [11:0] osd_buffer_addr;
+//wire [7:0] osd_byte = osd_buffer[osd_buffer_addr];
+wire [11:0] osd_buffer_addr;
+reg [7:0]  osd_byte;
 reg        osd_pixel;
+
+if (!BIG_OSD) begin
+   assign osd_buffer_addr = rotate[0] ? {rotate[1] ? osd_hcnt_next[7:5] : ~osd_hcnt_next[7:5],
+                                    rotate[1] ? (doublescan ? ~osd_vcnt[7:0] : ~{osd_vcnt[6:0], 1'b0}) :
+                                    (doublescan ?  osd_vcnt[7:0]  : {osd_vcnt[6:0], 1'b0})} :
+                                  {doublescan ? osd_vcnt[7:5] : osd_vcnt[6:4], osd_hcnt_next[7:0]};
+end else begin
+   assign osd_buffer_addr = rotate[0] ? {rotate[1] ? osd_hcnt_next[7:4] : ~osd_hcnt_next[7:4],
+                                    rotate[1] ? (doublescan ? ~osd_vcnt[7:0] : ~{osd_vcnt[6:0], 1'b0}) :
+                                    (doublescan ?  osd_vcnt[7:0]  : {osd_vcnt[6:0], 1'b0})} :
+                                  {doublescan ? osd_vcnt[7:4] : osd_vcnt[6:3], osd_hcnt_next[7:0]};
+end
 
 always @(posedge clk_sys) begin
 	if(ce_pix) begin
 		if (!BIG_OSD) begin
-			osd_buffer_addr <= rotate[0] ? {rotate[1] ? osd_hcnt_next[7:5] : ~osd_hcnt_next[7:5],
-			                                rotate[1] ? (doublescan ? ~osd_vcnt[7:0] : ~{osd_vcnt[6:0], 1'b0}) :
-			                                (doublescan ?  osd_vcnt[7:0]  : {osd_vcnt[6:0], 1'b0})} :
-			                              {doublescan ? osd_vcnt[7:5] : osd_vcnt[6:4], osd_hcnt_next[7:0]};
+//			osd_buffer_addr <= rotate[0] ? {rotate[1] ? osd_hcnt_next[7:5] : ~osd_hcnt_next[7:5],
+//			                                rotate[1] ? (doublescan ? ~osd_vcnt[7:0] : ~{osd_vcnt[6:0], 1'b0}) :
+//			                                (doublescan ?  osd_vcnt[7:0]  : {osd_vcnt[6:0], 1'b0})} :
+//			                              {doublescan ? osd_vcnt[7:5] : osd_vcnt[6:4], osd_hcnt_next[7:0]};
 
 			osd_pixel <= rotate[0]  ? osd_byte[rotate[1] ? osd_hcnt[4:2] : ~osd_hcnt[4:2]] :
 			                          osd_byte[doublescan ? osd_vcnt[4:2] : osd_vcnt[3:1]];
+			                          
 		end else begin
-			osd_buffer_addr <= rotate[0] ? {rotate[1] ? osd_hcnt_next[7:4] : ~osd_hcnt_next[7:4],
-			                                rotate[1] ? (doublescan ? ~osd_vcnt[7:0] : ~{osd_vcnt[6:0], 1'b0}) :
-			                                (doublescan ?  osd_vcnt[7:0]  : {osd_vcnt[6:0], 1'b0})} :
-			                              {doublescan ? osd_vcnt[7:4] : osd_vcnt[6:3], osd_hcnt_next[7:0]};
+//			osd_buffer_addr <= rotate[0] ? {rotate[1] ? osd_hcnt_next[7:4] : ~osd_hcnt_next[7:4],
+//			                                rotate[1] ? (doublescan ? ~osd_vcnt[7:0] : ~{osd_vcnt[6:0], 1'b0}) :
+//			                                (doublescan ?  osd_vcnt[7:0]  : {osd_vcnt[6:0], 1'b0})} :
+//			                              {doublescan ? osd_vcnt[7:4] : osd_vcnt[6:3], osd_hcnt_next[7:0]};
 
 			osd_pixel <= rotate[0]  ? osd_byte[rotate[1] ? osd_hcnt[3:1] : ~osd_hcnt[3:1]] :
 			                          osd_byte[doublescan ? osd_vcnt[3:1] : osd_vcnt[2:0]];
 		end
+		
+		osd_byte <= osd_buffer[osd_buffer_addr];
 
 		osd_de <= osd_enable &&
 		    ((USE_BLANKS && !HBlank) || (!USE_BLANKS && HSync != hs_pol)) && (h_cnt >= h_osd_start) && (h_cnt < h_osd_end) &&

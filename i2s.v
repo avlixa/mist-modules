@@ -35,7 +35,7 @@ always @(posedge clk) begin
 end
 
 
-always @(posedge clk) begin
+always @(posedge clk) begin :bloque1
 	reg  [4:0] bit_cnt = 1;
 
 	reg [AUDIO_DW-1:0] left;
